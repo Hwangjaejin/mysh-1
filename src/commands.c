@@ -1,10 +1,12 @@
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
+#include <sys/types.h>
+#include <sys/wait.h>
 #include "commands.h"
 #include "built_in.h"
+#include <unistd.h>
 
 static struct built_in_command built_in_commands[] = {
   { "cd", do_cd, validate_cd_argv },
@@ -50,11 +52,59 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
     } else {
-      fprintf(stderr, "%s: command not found\n", com->argv[0]);
-      return -1;
-    }
-  }
+      
+	int pid = 0;
+	int status = 0;
+	int background = 0;
 
+
+	
+
+	if(strcmp(com->argv[(com->argc)-1], "&") == 0)
+	{
+		background = 1;
+		com->argv[(com->argc)-1] = NULL;
+	}
+
+
+	pid = fork();	
+
+
+	if(background == 1)
+	{
+	
+		if(pid < 0)
+		{
+			fprintf(stderr, "Fork Failed\n");
+			return -1;
+		}else if(pid == 0)
+		{
+			printf("%d\n",getppid());
+			execv(com->argv[0],com->argv);
+			return 1;
+		}else
+		{
+			wait(&status);
+			printf("%d   done %s\n",getpid(),com->argv[0]);
+		}
+	}else
+	{
+		if(pid < 0)
+		{
+			fprintf(stderr, "Fork Failed\n");
+			return -1;
+		}else if(pid == 0 )
+		{
+			execv(com->argv[0],com->argv);
+		}else
+		{	
+			printf("자식기다리기 = %d\n", pid);
+			wait(&status);
+			printf("자식종료 = %d\n",getppid());
+		}	
+   	}
+  }
+}
   return 0;
 }
 

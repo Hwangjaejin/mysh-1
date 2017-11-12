@@ -53,11 +53,13 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       return 1;
     } else {
       
-	int pid = 0;
-	int status = 0;
-	int bg = 0;
+	int pid;
+	int status;
+	int bg;
 	char path[5][100] = {"/usr/local/bin/","/usr/bin/","/bin/","/usr/sbin/","/sbin/"};
+	char path2[100];
 
+	strcpy(path2, com->argv[0]);
 	
 
 	if(strcmp(com->argv[(com->argc)-1], "&") == 0)
@@ -79,9 +81,20 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 		if(bg == 1)
 		{
 			printf("%d\n",getppid());
-			execv(com->argv[0],com->argv);
+			if(execv(com->argv[0],com->argv) == -1);
+				return -1;
 		}else
-			execv(com->argv[0],com->argv);
+		{
+			for(int i = 0; i < 5; i++)
+			{
+				if(execv(com->argv[0],com->argv) == -1)
+				{
+					strcat(path[i],path2);
+					strcpy(com->argv[0],path[i]);
+				}else
+					break;
+			}
+		}
 	}else
 	{
 		if(bg == 1)

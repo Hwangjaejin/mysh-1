@@ -55,14 +55,14 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       
 	int pid = 0;
 	int status = 0;
-	int background = 0;
-
+	int bg = 0;
+	char path[5][100] = {"/usr/local/bin/","/usr/bin/","/bin/","/usr/sbin/","/sbin/"};
 
 	
 
 	if(strcmp(com->argv[(com->argc)-1], "&") == 0)
 	{
-		background = 1;
+		bg = 1;
 		com->argv[(com->argc)-1] = NULL;
 	}
 
@@ -70,39 +70,33 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 	pid = fork();	
 
 
-	if(background == 1)
+	if(pid < 0)
 	{
-	
-		if(pid < 0)
-		{
-			fprintf(stderr, "Fork Failed\n");
-			return -1;
-		}else if(pid == 0)
+		fprintf(stderr, "Fork Failed");
+		return -1;
+ 	}else if(pid == 0)
+	{
+		if(bg == 1)
 		{
 			printf("%d\n",getppid());
 			execv(com->argv[0],com->argv);
-			return 1;
 		}else
-		{
-			wait(&status);
-			printf("%d   done %s\n",getpid(),com->argv[0]);
-		}
+			execv(com->argv[0],com->argv);
 	}else
 	{
-		if(pid < 0)
+		if(bg == 1)
 		{
-			fprintf(stderr, "Fork Failed\n");
-			return -1;
-		}else if(pid == 0 )
-		{
-			execv(com->argv[0],com->argv);
-		}else
-		{	
-			printf("자식기다리기 = %d\n", pid);
 			wait(&status);
-			printf("자식종료 = %d\n",getppid());
-		}	
-   	}
+			printf("%d  done  ",getpid());
+			for(int i = 0 ; i < com->argc-1 ; i++)
+			{
+				fputs(com->argv[i],stdout);
+				printf(" ");
+			} printf("\n");
+		}else
+			wait(&status);
+	}
+ 
   }
 }
   return 0;
